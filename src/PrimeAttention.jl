@@ -1,5 +1,16 @@
 module PrimeAttention
 
-# Write your package code here.
+using Flux
+using Zygote
+using Primes
+using LinearAlgebra
+using Statistics
 
-end
+# Include sub-files
+include("kernel.jl")
+include("layer.jl")
+
+# Export the user-facing layer
+export PrimeSelfAttention
+
+end # module
