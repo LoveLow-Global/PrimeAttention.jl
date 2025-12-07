@@ -52,7 +52,7 @@ While not linear, this offers a significant speedup over standard $O(N^2)$ atten
 | 16384      | 134225920       | 16606689        | 8.1      x | 87.6     % |
 | 65536      | 2147516416      | 226697479       | 9.5      x | 89.4     % |
 
-*Note: "Standard Ops" refers to Causal Attention $N(N+1)/2$. "PrimeBird Ops" calculated with global=2, window=3.*
+*Note: "Standard Ops" refers to Causal Attention* $N(N+1)/2$. *"PrimeBird Ops" calculated with global=2, window=3.*
 
 ### Complexity Derivation
 The number of connections for a token at index $i$ is approximately the number of primes less than $i$, denoted as $\pi(i)$. By the Prime Number Theorem, $\pi(i) \approx i / \ln i$.
