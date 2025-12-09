@@ -33,7 +33,6 @@ using LinearAlgebra
         seq_len = 20
         dim = 8
 
-        # FIX: Removed the extra '128' positional argument
         layer = PrimeSelfAttention(dim, 1, 3, 2; seq_len_max = 128)
         
         x = rand(Float32, dim, seq_len, 1)

@@ -56,4 +56,3 @@ heatmap(
 )
 
 savefig("prime_attention_heatmap.png")
-println("Saved heatmap to prime_attention_heatmap.png")

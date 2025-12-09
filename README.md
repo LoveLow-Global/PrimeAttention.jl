@@ -6,12 +6,48 @@ A sparse, number-theoretic attention mechanism that can be used with [Flux.jl](h
 
 ## Overview
 
-**PrimeAttention** is a sparse attention layer designed for sequence modeling in Flux.jl. It introduces a novel connectivity pattern based on the distribution of prime numbers to efficiently handle long contexts without the $O(N^2)$ computational complexity of standard Transformers.
+**PrimeAttention** is a sparse attention layer designed for sequence modeling in Flux.jl, works best with Julia 1.12 or later. It introduces a novel connectivity pattern based on the distribution of prime numbers to efficiently handle long contexts without the $O(N^2)$ computational complexity of standard Transformers.
 
 Inspired by architectures like **[BigBird](https://arxiv.org/abs/2007.14062)**, this package implements a hybrid "PrimeBird" mechanism that combines three strategies:
 1.  **Global Tokens:** For sequence-wide context summaries.
 2.  **Sliding Window:** For local syntax and immediate context.
 3.  **Prime Intervals:** For sparse, non-repeating long-range dependencies.
+
+## Usage
+
+`PrimeSelfAttention` is designed to be a drop-in replacement for standard Flux layers. You can drop it directly into a Flux.Chain alongside standard layers like Dense, LayerNorm, or Dropout to build sparse Transformer blocks. Here is a very simple example.
+
+```julia
+using Flux
+using PrimeAttention
+
+# Define parameters
+embed_dim = 64
+n_heads = 4
+global_tokens = 2
+window_size = 3
+
+# Initialize the layer
+attention_layer = PrimeSelfAttention(embed_dim, n_heads, global_tokens, window_size)
+
+# Create dummy input
+x = rand(Float32, embed_dim, 128, 8)
+
+# Forward pass
+y = attention_layer(x)
+
+println("Input:  ", size(x))
+println("Output: ", size(y))
+
+# Inside a Flux Chain
+model = Chain(
+    Dense(32 => 64),
+    PrimeSelfAttention(64, 4, 2, 3), 
+    LayerNorm(64),
+    Dense(64 => 10),
+    softmax
+)
+```
 
 ### Number-Theoretic Background
 
