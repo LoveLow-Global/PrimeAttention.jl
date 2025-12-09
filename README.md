@@ -49,7 +49,7 @@ model = Chain(
 )
 ```
 
-### Number-Theoretic Background
+## Number-Theoretic Background
 
 According to the Prime Number Theorem, the density of prime numbers decreases as numbers get larger, approximately following $\pi(x) \approx x/\ln x$.
 
