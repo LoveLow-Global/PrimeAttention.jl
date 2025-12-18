@@ -6,7 +6,7 @@ A sparse, number-theoretic attention mechanism that can be used with [Flux.jl](h
 
 ## Overview
 
-**PrimeAttention** is a sparse attention layer designed for sequence modeling in Flux.jl, works best with Julia 1.12 or later. It introduces a novel connectivity pattern based on the distribution of prime numbers to efficiently handle long contexts without the $O(N^2)$ computational complexity of standard Transformers.
+**PrimeAttention** is a sparse attention layer designed for sequence modeling in Flux.jl, works best with Julia 1.11 or later. It introduces a novel connectivity pattern based on the distribution of prime numbers to efficiently handle long contexts without the $O(N^2)$ computational complexity of standard Transformers.
 
 Inspired by architectures like **[BigBird](https://arxiv.org/abs/2007.14062)**, this package implements a hybrid "PrimeBird" mechanism that combines three strategies:
 1.  **Global Tokens:** For sequence-wide context summaries.
