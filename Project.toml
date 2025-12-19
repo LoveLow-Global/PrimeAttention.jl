@@ -1,6 +1,6 @@
 name = "PrimeAttention"
 uuid = "8947be7e-a623-4b33-ad81-c67fb9ad3345"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jihyung Kim <awesomepeoplefund@gmail.com"]
 
 [deps]

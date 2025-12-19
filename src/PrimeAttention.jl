@@ -10,7 +10,7 @@ using Statistics
 include("kernel.jl")
 include("layer.jl")
 
-# Export the user-facing layer
-export PrimeSelfAttention
+# Export the generic layer and the specific constructors
+export SparseIndexAttention, PrimeSelfAttention, SquareSelfAttention, MianChowlaSelfAttention
 
 end # module
