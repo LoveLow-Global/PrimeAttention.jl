@@ -21,7 +21,6 @@ The package provides factory functions that return a `SparseIndexAttention` laye
 using Flux
 using PrimeAttention
 
-
 # Define parameters
 embed_dim = 64
 n_heads = 4
@@ -63,12 +62,17 @@ While not linear, this offers a significant speedup over standard $O(N^2)$ atten
 
 ## Number-Theoretic Background
 
-According to the Prime Number Theorem, the density of prime numbers decreases as numbers get larger, approximately following $\pi(x) \approx x/\ln x$.
+### 1. Prime Intervals
 
-By restricting attention connections to relative distances $p \in \{2, 3, 5, 7, 11, \dots\}$, PrimeAttention achieves a natural **"Fading Attention"** mechanism:
-* **High Resolution:** The model retains dense connectivity in the recent past, as small primes are frequent.
-* **High Efficiency:** The model utilizes sparse connectivity in the distant past, as large primes are rare.
-* **Deterministic Irregularity:** Unlike fixed stride patterns, prime intervals avoid harmonic synchronization, reducing blind spots in the receptive field.
+Based on the Prime Number Theorem, the density of connections follows $\pi(x) \approx x/\ln x$. This provides a fading resolution where recent history is dense and distant history is sparse.
+
+### 2. Square Intervals
+
+Connections are restricted to $j = i - n^2$. This is significantly sparser than Primes. Because the number of squares up to $N$ is exactly $\lfloor\sqrt{N}\rfloor$, the total complexity reduces from quadratic to sub-quadratic $O(N\sqrt{N})$.
+
+### 3. Mian-Chowla (Greedy Sidon Set)
+
+The Mian-Chowla sequence is also known as the greedy Sidon set. In an attention context, this ensures that the "relative distances" between attended tokens are unique, theoretically reducing redundant information capture across sparse heads.
 
 ## Architecture
 

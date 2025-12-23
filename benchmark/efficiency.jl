@@ -1,62 +1,99 @@
-using Primes
+using PrimeAttention
+using Flux
+using BenchmarkTools
 using Printf
 
 """
-    calculate_efficiency(N, d_model, window, global_tokens)
+    StandardFullAttention(dims::Int; heads=1)
 
-Compares Standard Attention (O(N^2)) vs. Prime Attention (O(N^2 / ln(N))).
-Returns the number of dot products calculated.
+A baseline implementation of standard O(N^2) Full Attention using 
+efficient batched matrix multiplication (BLAS) for fair comparison.
 """
-
-function calculate_efficiency(N::Int; window::Int=3, global_tokens::Int=2)
-    # I. Standard: Every token attends to every past token
-    # Total edges = Sum(1 to N) ≈ N^2 / 2
-    edges_std = (N * (N + 1)) / 2
-    
-    # II. Prime Attetion
-    edges_prime = 0
-    p_list = primes(N)
-    
-    for i in 1:N
-        active_indices = Set{Int}()
-        
-        # 1. Global : 1 ... G
-        for g in 1:global_tokens
-            if g < i; push!(active_indices, g); end
-        end
-        
-        # 2. Window : i-W ... i
-        start_win = max(1, i - window)
-        for w in start_win:i
-            push!(active_indices, w)
-        end
-        
-        # 3. Primes : i-p
-        for p in p_list
-            target = i - p
-            if target >= 1
-                push!(active_indices, target)
-            end
-        end
-        
-        edges_prime += length(active_indices)
-    end
-    
-    return edges_std, edges_prime
+struct StandardFullAttention
+    dims::Int
+    scale::Float32
+    Wi::Dense
+    Wo::Dense
 end
 
-println("Comparing Standard Causal Attention vs. Prime Attention (PrimeBird)")
-@printf "%-10s | %-15s | %-15s | %-10s | %-10s\n" "Seq Len" "Standard Ops" "Prime Ops" "Speedup" "Sparsity"
+Flux.@layer StandardFullAttention
 
-
-for N in [2^8, 2^10, 2^12, 2^14, 2^16]
-    std, prime = calculate_efficiency(N)
-    
-    # Calculate Metrics
-    speedup = std / prime
-    sparsity = 100 * (1 - (prime / std))
-    
-    @printf "%-10d | %-15d | %-15d | %-9.1fx | %-9.1f%%\n" N std prime speedup sparsity
+function StandardFullAttention(dims::Int)
+    Wi = Dense(dims => dims*3)
+    Wo = Dense(dims => dims)
+    scale = 1.0f0 / sqrt(Float32(dims))
+    return StandardFullAttention(dims, scale, Wi, Wo)
 end
 
-println("Note: \"Ops\" is the number of dot-product connections computed.")
+function (m::StandardFullAttention)(x::AbstractArray{T,3}) where {T}
+    dims, seq_len, batch_size = size(x)
+
+    qkv = m.Wi(x)
+    chunk = div(dims*3, 3)
+
+    q = view(qkv,(1:chunk),:,:)
+    k = view(qkv,((chunk+1):(2*chunk)),:,:)
+    v = view(qkv,((2*chunk+1):(3*chunk)),:,:)
+
+    scores = NNlib.batched_mul(permutedims(q, (2, 1, 3)), k) .* m.scale
+
+    weights = softmax(scores, dims = 2)
+
+    context = NNlib.batched_mul(v, permutedims(weights, (2, 1, 3)))
+
+    return m.Wo(context)
+end
+
+# Configuration
+const DIMS = 64      # Embedding dimension
+const SEQ_LEN = 2048 # Sequence length (N)
+const BATCH_SIZE = 4 # Batch size
+const GLOBAL = 3     # Global tokens
+const WINDOW = 3     # Local window size
+const HEADS = 1      # Heads (Single head for this test)
+
+@printf("Config: Sequence Length=%d, Batch=%d, Dims=%d\n", SEQ_LEN, BATCH_SIZE, DIMS)
+
+# Dummy Input
+x = randn(Float32, DIMS, SEQ_LEN, BATCH_SIZE)
+
+# Initialize Models
+full_attn = StandardFullAttention(DIMS)
+prime_attn =
+    PrimeSelfAttention(DIMS, window = WINDOW, global_tokens = GLOBAL, seq_len_max = SEQ_LEN)
+sq_attn = SquareSelfAttention(
+    DIMS,
+    window = WINDOW,
+    global_tokens = GLOBAL,
+    seq_len_max = SEQ_LEN,
+)
+mc_attn = MianChowlaSelfAttention(
+    DIMS,
+    window = WINDOW,
+    global_tokens = GLOBAL,
+    seq_len_max = SEQ_LEN,
+)
+
+function run_benchmark(name, model, input)
+    println("Benchmarking $name")
+    model(input)
+    b = @benchmark $model($input)
+
+    t_med = median(b.times) / 1e6
+
+    @printf("Median Time: %.3f ms\n", t_med)
+    @printf("Memory:      %.3f MiB\n", b.memory / 1024^2)
+    return t_med
+end
+
+t_full = run_benchmark("Full Attention (Standard)", full_attn, x)
+t_prime = run_benchmark("Prime Attention", prime_attn, x)
+t_sq = run_benchmark("Square Attention", sq_attn, x)
+t_mc = run_benchmark("Mian-Chowla Attention", mc_attn, x)
+
+
+@printf "%-25s | %-12s | %s\n" "Model" "Time (ms)" "Speedup vs Full"
+@printf "%-25s | %-12.3f | %s\n" "Full Attention" t_full "1.00x (Baseline)"
+@printf "%-25s | %-12.3f | %.2fx\n" "Prime Attention" t_prime (t_full / t_prime)
+@printf "%-25s | %-12.3f | %.2fx\n" "Square Attention" t_sq (t_full / t_sq)
+@printf "%-25s | %-12.3f | %.2fx\n" "Mian-Chowla Attention" t_mc (t_full / t_mc)
