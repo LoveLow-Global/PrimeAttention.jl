@@ -4,6 +4,8 @@
 
 A sparse, number-theoretic attention mechanism library for [Flux.jl](https://fluxml.ai/Flux.jl/stable/).
 
+Julia 1.11 required, 1.12 or higher recommended.
+
 ## Overview
 
 **PrimeAttention.jl** provides sparse attention layers that leverage number-theoretic sequences to define connectivity patterns. By using mathematical sequences instead of dense matrices or random sparsity, these layers achieve long-range dependencies with significantly lower computational complexity than standard $O(N^2)$ Transformers.
@@ -97,4 +99,4 @@ Differentiation: Fully compatible with `Zygote.jl` via `Zygote.Buffer` to handle
 
 Performance: While complexity is reduced mathematically, speedup in the current version is limited by CPU-based iteration, as we are using scalar indexing which will either cause the GPU to crash or be incredibly slow. This implementation serves as a research reference mainly.
 
-Future updates aim to make `PrimeAttention.jl` suitable for `Lux.jl` and GPU kernels.
+Future updates aim to make `PrimeAttention.jl` suitable for `Lux.jl` and GPU kernels, along with actual performance comparision results against other attention algorithms.
