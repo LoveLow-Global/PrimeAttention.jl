@@ -19,21 +19,21 @@ end
 Flux.@layer StandardFullAttention
 
 function StandardFullAttention(dims::Int)
-    Wi = Dense(dims => dims*3)
+    Wi = Dense(dims => dims * 3)
     Wo = Dense(dims => dims)
     scale = 1.0f0 / sqrt(Float32(dims))
     return StandardFullAttention(dims, scale, Wi, Wo)
 end
 
-function (m::StandardFullAttention)(x::AbstractArray{T,3}) where {T}
+function (m::StandardFullAttention)(x::AbstractArray{T, 3}) where {T}
     dims, seq_len, batch_size = size(x)
 
     qkv = m.Wi(x)
-    chunk = div(dims*3, 3)
+    chunk = div(dims * 3, 3)
 
-    q = view(qkv,(1:chunk),:,:)
-    k = view(qkv,((chunk+1):(2*chunk)),:,:)
-    v = view(qkv,((2*chunk+1):(3*chunk)),:,:)
+    q = view(qkv, (1:chunk), :, :)
+    k = view(qkv, ((chunk + 1):(2 * chunk)), :, :)
+    v = view(qkv, ((2 * chunk + 1):(3 * chunk)), :, :)
 
     scores = NNlib.batched_mul(permutedims(q, (2, 1, 3)), k) .* m.scale
 
@@ -79,7 +79,7 @@ function run_benchmark(name, model, input)
     model(input)
     b = @benchmark $model($input)
 
-    t_med = median(b.times) / 1e6
+    t_med = median(b.times) / 1.0e6
 
     @printf("Median Time: %.3f ms\n", t_med)
     @printf("Memory:      %.3f MiB\n", b.memory / 1024^2)
