@@ -95,4 +95,6 @@ Refactored Kernel: All layers share a universal `sparse_index_kernel` that itera
 
 Differentiation: Fully compatible with `Zygote.jl` via `Zygote.Buffer` to handle array mutations during the forward pass.
 
-Performance: While complexity is reduced mathematically, speedup in the current version is limited by CPU-based iteration. This implementation serves as a research reference mainly.
+Performance: While complexity is reduced mathematically, speedup in the current version is limited by CPU-based iteration, as we are using scalar indexing which will either cause the GPU to crash or be incredibly slow. This implementation serves as a research reference mainly.
+
+Future updates aim to make `PrimeAttention.jl` suitable for `Lux.jl` and GPU kernels.
