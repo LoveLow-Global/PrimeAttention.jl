@@ -4,7 +4,7 @@
 
 A sparse, number-theoretic attention mechanism library for [Lux](https://github.com/LuxDL/Lux.jl).
 
-Julia 1.11 required, 1.12 or higher recommended.
+Julia 1.11 required, 1.12 or higher recommended. May not work for Julia 1.12.4, as there are known issues with Julia 1.12.4 regarding [Enzyme](https://github.com/EnzymeAD/Enzyme.jl), which PrimeAttention depends on.
 
 ## Overview
 
