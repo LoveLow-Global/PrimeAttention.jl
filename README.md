@@ -2,7 +2,7 @@
 
 ![Prime Attention Heatmap](images/prime_attention_heatmap.png)
 
-A sparse, number-theoretic attention mechanism library for [Flux.jl](https://fluxml.ai/Flux.jl/stable/).
+A sparse, number-theoretic attention mechanism library for [Lux](https://github.com/LuxDL/Lux.jl).
 
 Julia 1.11 required, 1.12 or higher recommended.
 
