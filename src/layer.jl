@@ -1,36 +1,41 @@
 """
-    SparseIndexAttention(dims::Int, indices::Vector{Int}, heads::Int, window::Int, global_tokens::Int)
+SparseIndexAttention(dims::Int, indices::Vector{Int}, heads::Int, window::Int, global_tokens::Int)
 
 A generic sparse attention layer that attends to:
 1. Global tokens (hubs).
 2. Local window (neighbors).
 3. Sparse indices provided in `indices_list`.
 """
-struct SparseIndexAttention{D}
+struct SparseIndexAttention{W1, W2} <: Lux.AbstractLuxContainerLayer{(:Wi, :Wo)}
     heads::Int
     dims::Int
     indices_list::Vector{Int}
     window::Int
     global_tokens::Int
-    Wi::D
-    Wo::D
+    Wi::W1
+    Wo::W2
 end
 
-Flux.@layer SparseIndexAttention
-
 # Generic Forward Pass
-function (m::SparseIndexAttention)(x::AbstractArray{T, 3}) where {T}
+function (m::SparseIndexAttention)(x::AbstractArray{T, 3}, ps, st) where {T}
     dims_in, seq_len, batch_size = size(x)
-    qkv = m.Wi(x)
-    chunk = div(size(qkv, 1), 3)
 
-    outputs = map(1:batch_size) do b
+    # Pass x through Wi using its specific parameters and state
+    qkv, st_Wi = m.Wi(x, ps.Wi, st.Wi)
+    dims_qkv = size(qkv, 1)
+    chunk = div(dims_qkv, 3)
+
+    # Pre-allocate for type stability
+    out_concat = similar(qkv, chunk, seq_len, batch_size)
+
+    for b in 1:batch_size
         q_slice = view(qkv, 1:chunk, :, b)
         k_slice = view(qkv, (chunk + 1):(2 * chunk), :, b)
         v_slice = view(qkv, (2 * chunk + 1):(3 * chunk), :, b)
+        y_slice = view(out_concat, :, :, b) # View into the pre-allocated output
 
-        # Use the universal kernel
-        sparse_index_kernel(
+        sparse_index_kernel!(
+            y_slice,
             q_slice,
             k_slice,
             v_slice,
@@ -40,8 +45,12 @@ function (m::SparseIndexAttention)(x::AbstractArray{T, 3}) where {T}
         )
     end
 
-    out_concat = cat(outputs..., dims = 3)
-    return m.Wo(out_concat)
+    # Pass through Wo and capture updated state
+    out, st_Wo = m.Wo(out_concat, ps.Wo, st.Wo)
+
+    new_st = (Wi = st_Wi, Wo = st_Wo)
+
+    return out, new_st
 end
 
 # Constructors

@@ -20,10 +20,18 @@ Inspired by architectures like [BigBird](https://arxiv.org/abs/2007.14062), this
 The package provides factory functions that return a `SparseIndexAttention` layer. Here is a simple example.
 
 ```julia
-using Flux
-using PrimeAttention
+## Usage
 
-# Define parameters
+The package provides factory functions that return a `SparseIndexAttention` layer. Because this library is built on **Lux.jl**, it utilizes explicit parameter and state management.
+
+Here is a simple example:
+
+```julia
+using Lux
+using PrimeAttention
+using Random
+
+# Parameters
 embed_dim = 64
 n_heads = 4
 global_tokens = 2
@@ -32,23 +40,28 @@ window_size = 3
 # Initialize layer
 attention_layer = PrimeSelfAttention(embed_dim; heads=n_heads, global_tokens=global_tokens, window=window_size)
 
+rng = Random.default_rng()
+Random.seed!(rng, 0)
+ps, st = Lux.setup(rng, attention_layer)
+
 # Dummy input
 x = rand(Float32, embed_dim, 128, 8)
 
 # Forward pass
-y = attention_layer(x)
+y, st = attention_layer(x, ps, st)
 
 println("Input:  ", size(x))
 println("Output: ", size(y))
 
-# Inside a Flux Chain
+# Lux Chain
 model = Chain(
     Dense(32 => 64),
     PrimeSelfAttention(64; heads=4, global_tokens=2, window=3), 
-    LayerNorm(64),
-    Dense(64 => 10),
-    softmax
+    LayerNorm((64,)),
+    Dense(64 => 10)
 )
+
+ps_model, st_model = Lux.setup(rng, model)
 ```
 
 ## Layer
@@ -93,10 +106,12 @@ Where $G$ is the number of global tokens and $W$ is the window size.
 
 ## Implementation Notes
 
-Refactored Kernel: All layers share a universal `sparse_index_kernel` that iterates exclusively over valid indices.
+- Architecture: Now using [Lux.jl](https://luxdl.github.io/Lux.jl/stable/) to leverage explicit parameter (`ps`) and state (`st`) management, making it highly modular.
 
-Differentiation: Fully compatible with `Zygote.jl` via `Zygote.Buffer` to handle array mutations during the forward pass.
+- Refactored Kernel: All layers share a universal, in-place `sparse_index_kernel!`. Memory is strictly pre-allocated to guarantee type stability and prevent garbage collection bottlenecks during forward pass.
 
-Performance: While complexity is reduced mathematically, speedup in the current version is limited by CPU-based iteration, as we are using scalar indexing which will either cause the GPU to crash or be incredibly slow. This implementation serves as a research reference mainly.
+- Differentiation: Fully compatible with [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) for fast, LLVM-level reverse-mode automatic differentiation.
 
-Future updates aim to make `PrimeAttention.jl` suitable for `Lux.jl` and GPU kernels, along with actual performance comparision results against other attention algorithms.
+- Performance: WWhile the asymptotic complexity is reduced mathematically, the current speedup is limited by CPU-bound scalar iteration. Using this on a GPU right now will trigger scalar indexing fallbacks. This implementation serves primarily as a research reference.
+
+- Future Work: The next update aims to rewrite the kernel using [KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl) or [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) to unlock true hardware-level GPU acceleration, followed by empirical performance benchmarks against standard dense attention algorithms.

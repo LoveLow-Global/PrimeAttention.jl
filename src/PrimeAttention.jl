@@ -1,7 +1,8 @@
 module PrimeAttention
 
-using Flux
-using Zygote
+using Lux
+#using Enzyme
+#using Zygote
 using Primes
 using LinearAlgebra
 using Statistics
