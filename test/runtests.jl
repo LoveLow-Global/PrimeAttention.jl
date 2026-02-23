@@ -83,7 +83,7 @@ using Random
                 Const(layer),
                 Const(x),
                 Const(target),
-                Const(st)
+                Const(st),
             )
 
             # Check gradients for input and output projection weights

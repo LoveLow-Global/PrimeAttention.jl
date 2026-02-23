@@ -59,14 +59,17 @@ x = randn(Float32, DIMS, SEQ_LEN, BATCH_SIZE)
 
 # Initialize Models
 full_attn = StandardFullAttention(DIMS)
+
 prime_attn =
     PrimeSelfAttention(DIMS, window = WINDOW, global_tokens = GLOBAL, seq_len_max = SEQ_LEN)
+
 sq_attn = SquareSelfAttention(
     DIMS,
     window = WINDOW,
     global_tokens = GLOBAL,
     seq_len_max = SEQ_LEN,
 )
+
 mc_attn = MianChowlaSelfAttention(
     DIMS,
     window = WINDOW,

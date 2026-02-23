@@ -112,6 +112,6 @@ Where $G$ is the number of global tokens and $W$ is the window size.
 
 - Differentiation: Fully compatible with [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) for fast, LLVM-level reverse-mode automatic differentiation.
 
-- Performance: WWhile the asymptotic complexity is reduced mathematically, the current speedup is limited by CPU-bound scalar iteration. Using this on a GPU right now will trigger scalar indexing fallbacks. This implementation serves primarily as a research reference.
+- Performance: While the asymptotic complexity is reduced mathematically, the current speedup is limited by CPU-bound scalar iteration. Using this on a GPU right now will trigger scalar indexing fallbacks. This implementation serves primarily as a research reference.
 
 - Future Work: The next update aims to rewrite the kernel using [KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl) or [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) to unlock true hardware-level GPU acceleration, followed by empirical performance benchmarks against standard dense attention algorithms.
