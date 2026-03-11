@@ -15,11 +15,7 @@ Inspired by architectures like [BigBird](https://arxiv.org/abs/2007.14062), this
 2.  **Sliding Window:** For local syntax and immediate context.
 3. **Theoretic Intervals:** Sparse long-range connections based on Primes, Squares, or the Mian-Chowla sequence.
 
-## Usage
 
-The package provides factory functions that return a `SparseIndexAttention` layer. Here is a simple example.
-
-```julia
 ## Usage
 
 The package provides factory functions that return a `SparseIndexAttention` layer. Because this library is built on **Lux.jl**, it utilizes explicit parameter and state management.
