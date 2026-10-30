@@ -4,7 +4,7 @@
 
 A sparse, number-theoretic attention mechanism library for [Lux](https://github.com/LuxDL/Lux.jl).
 
-Julia 1.11 required, 1.12 or higher recommended. May not work for Julia 1.12.4, as there are known issues with Julia 1.12.4 regarding [Enzyme](https://github.com/EnzymeAD/Enzyme.jl), which PrimeAttention depends on.
+Julia 1.11 required, 1.12 or higher recommended.
 
 ## Overview
 
@@ -106,7 +106,7 @@ Where $G$ is the number of global tokens and $W$ is the window size.
 
 - Refactored Kernel: All layers share a universal, in-place `sparse_index_kernel!`. Memory is strictly pre-allocated to guarantee type stability and prevent garbage collection bottlenecks during forward pass.
 
-- Differentiation: Fully compatible with [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) for fast, LLVM-level reverse-mode automatic differentiation.
+- Differentiation: Fully compatible with [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) for fast, LLVM-level reverse-mode automatic differentiation. Pass the input as `Duplicated` rather than `Const`: for a `Const` 3-D input, Lux's `Dense` needs runtime activity (`set_runtime_activity`), which then overwrites the input with its gradient. See [`test/runtests.jl`](test/runtests.jl) for an example.
 
 - Performance: While the asymptotic complexity is reduced mathematically, the current speedup is limited by CPU-bound scalar iteration. Using this on a GPU right now will trigger scalar indexing fallbacks. This implementation serves primarily as a research reference.
 

@@ -20,6 +20,21 @@ using Random
         return sum(abs2, y .- target) / length(target)
     end
 
+    # Central finite-difference gradient of `loss()` w.r.t. each entry of `p`
+    function finite_diff(loss, p; h = 1.0e-6)
+        grad = similar(p)
+        for i in eachindex(p)
+            p_i = p[i]
+            p[i] = p_i + h
+            loss_plus = loss()
+            p[i] = p_i - h
+            loss_minus = loss()
+            p[i] = p_i
+            grad[i] = (loss_plus - loss_minus) / (2 * h)
+        end
+        return grad
+    end
+
     @testset "Construction & Forward" begin
         # 1. Prime
         p_layer = PrimeSelfAttention(
@@ -89,6 +104,41 @@ using Random
             # Check gradients for input and output projection weights
             @test norm(dps.Wi.weight) > 0
             @test norm(dps.Wo.weight) > 0
+        end
+    end
+
+    @testset "Gradient Correctness" begin
+        # Compare Enzyme gradients with finite differences, in Float64 for accuracy
+        x64 = rand(rng, Float64, dims, seq_len, batch)
+        target64 = rand(rng, Float64, dims, seq_len, batch)
+
+        for factory in [PrimeSelfAttention, SquareSelfAttention, MianChowlaSelfAttention]
+            layer = factory(dims; seq_len_max = 64)
+            ps, st = Lux.setup(rng, layer)
+            ps64 = f64(ps)
+
+            dps = Enzyme.make_zero(ps64)
+            dx = zero(x64)
+
+            # The input is Duplicated, not Const: for a Const 3-D input, Lux's `Dense`
+            # needs runtime activity, which then overwrites the input with its gradient
+            Enzyme.autodiff(
+                Enzyme.Reverse,
+                compute_loss,
+                Active,
+                Duplicated(ps64, dps),
+                Const(layer),
+                Duplicated(x64, dx),
+                Const(target64),
+                Const(st),
+            )
+
+            loss = () -> compute_loss(ps64, layer, x64, target64, st)
+            @test dps.Wi.weight ≈ finite_diff(loss, ps64.Wi.weight) rtol = 1.0e-5
+            @test dps.Wi.bias ≈ finite_diff(loss, ps64.Wi.bias) rtol = 1.0e-5
+            @test dps.Wo.weight ≈ finite_diff(loss, ps64.Wo.weight) rtol = 1.0e-5
+            @test dps.Wo.bias ≈ finite_diff(loss, ps64.Wo.bias) rtol = 1.0e-5
+            @test dx ≈ finite_diff(loss, x64) rtol = 1.0e-5
         end
     end
 
