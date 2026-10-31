@@ -18,12 +18,10 @@ function sparse_index_kernel!(
 
     @inbounds for i in 1:seq_len
         max_score = T(-Inf)
+        start_win = max(1, i - window)
 
-        # 1. Global Attention
-        for g in 1:global_tokens
-            if g >= i
-                break
-            end
+        # 1. Global Attention (only tokens before the window, so none is counted twice)
+        for g in 1:min(global_tokens, start_win - 1)
             score = zero(T)
             for d in 1:d_head
                 score += q[d, i] * k[d, g]
@@ -32,7 +30,6 @@ function sparse_index_kernel!(
         end
 
         # 2. Local Window
-        start_win = max(1, i - window)
         for j in start_win:i
             score = zero(T)
             for d in 1:d_head
@@ -66,10 +63,7 @@ function sparse_index_kernel!(
         end
 
         # 1. Global
-        for g in 1:global_tokens
-            if g >= i
-                break
-            end
+        for g in 1:min(global_tokens, start_win - 1)
             score = zero(T)
             for d in 1:d_head
                 score += q[d, i] * k[d, g]
@@ -82,7 +76,6 @@ function sparse_index_kernel!(
         end
 
         # 2. Window (Neighbour)
-        start_win = max(1, i - window)
         for j in start_win:i
             score = zero(T)
             for d in 1:d_head
