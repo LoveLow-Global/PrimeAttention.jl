@@ -82,6 +82,33 @@ using Random
         @test size(y_m) == (dims, seq_len, batch)
     end
 
+    @testset "Kernel vs Dense Reference" begin
+        # Softmax over the unique keys {j <= i : j <= G || i - j <= W || (i - j) in S}
+        function dense_reference(q, k, v, S, W, G)
+            y = zero(q)
+            for i in axes(q, 2)
+                attended = filter(j -> j <= G || i - j <= W || (i - j) in S, 1:i)
+                scores = [dot(q[:, i], k[:, j]) for j in attended] / sqrt(size(q, 1))
+                weights = exp.(scores .- maximum(scores))
+                y[:, i] = v[:, attended] * weights / sum(weights)
+            end
+            return y
+        end
+
+        d_head, n = 4, 10
+        # The last two (G, W) pairs have G + W >= n: every key is global or in the window
+        configs = [(0, 0), (0, 3), (2, 0), (1, 1), (2, 3), (3, 7), (12, 2)]
+        for factory in [PrimeSelfAttention, SquareSelfAttention, MianChowlaSelfAttention]
+            S = factory(d_head; seq_len_max = n).indices_list
+            @testset "$factory, G = $G, W = $W" for (G, W) in configs
+                q, k, v = (randn(rng, d_head, n) for _ in 1:3)
+                y = similar(q)
+                PrimeAttention.sparse_index_kernel!(y, q, k, v, S, W, G)
+                @test y ≈ dense_reference(q, k, v, S, W, G)
+            end
+        end
+    end
+
     @testset "Gradient Pass" begin
         # Test gradient through the universal kernel for different index sets
         for factory in [PrimeSelfAttention, SquareSelfAttention, MianChowlaSelfAttention]
