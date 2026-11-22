@@ -1,7 +1,7 @@
 name = "PrimeAttention"
 uuid = "8947be7e-a623-4b33-ad81-c67fb9ad3345"
 version = "0.3.2"
-authors = ["Jihyung Kim <awesomepeoplefund@gmail.com"]
+authors = ["Jihyung Kim <lovelow0129@gmail.com>"]
 
 [deps]
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
