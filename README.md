@@ -108,6 +108,6 @@ Where $G$ is the number of global tokens and $W$ is the window size.
 
 - Differentiation: Fully compatible with [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) for fast, LLVM-level reverse-mode automatic differentiation. Pass the input as `Duplicated` rather than `Const`: for a `Const` 3-D input, Lux's `Dense` needs runtime activity (`set_runtime_activity`), which then overwrites the input with its gradient. See [`test/runtests.jl`](test/runtests.jl) for an example.
 
-- Performance: While the asymptotic complexity is reduced mathematically, the current speedup is limited by CPU-bound scalar iteration. Using this on a GPU right now will trigger scalar indexing fallbacks. This implementation serves primarily as a research reference.
+- Performance: While the asymptotic complexity is reduced mathematically, the current speedup is limited by CPU-bound scalar iteration. Using this on a GPU right now will trigger scalar indexing fallbacks. This implementation serves primarily as a research reference. To compare against standard causal full attention, run `julia --project=benchmark -e 'using Pkg; Pkg.instantiate()'` and then `julia --project=benchmark benchmark/efficiency.jl` from the repository root.
 
 - Future Work: The next update aims to rewrite the kernel using [KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl) or [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) to unlock true hardware-level GPU acceleration, followed by empirical performance benchmarks against standard dense attention algorithms.
