@@ -68,7 +68,7 @@ While not linear, this offers a significant speedup over standard $O(N^2)$ atten
 | :--- | :--- | :--- | :--- | :--- |
 | `PrimeSelfAttention` | Primes $\{2, 3, 5, \dots\}$ | $\approx 1/\ln i$ | $O(N^2 / \ln N)$ | Balanced long-range skip |
 | `SquareSelfAttention` | Squares $\{1, 4, 9, \dots\}$ | $\approx 1/\sqrt{i}$ | $O(N \sqrt{N})$ | Extremely sparse / Efficiency |
-| `MianChowlaSelfAttention` | Mian-Chowla $\{1, 2, 5, \dots\}$ | $< 1/\sqrt{i}$ | $O(N \sqrt{N})$ | Non-redundant "Sidon" patterns | 
+| `MianChowlaSelfAttention` | Mian-Chowla $\{1, 2, 4, 8, 13, \dots\}$ | $< 1/\sqrt{i}$ | $O(N \sqrt{N})$ | Non-redundant "Sidon" patterns | 
 
 
 ## Number-Theoretic Background

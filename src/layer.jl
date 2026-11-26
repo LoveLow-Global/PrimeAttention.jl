@@ -55,6 +55,19 @@ end
 
 # Constructors
 
+"""
+    PrimeSelfAttention(dims::Int; heads = 1, window = 3, global_tokens = 2, seq_len_max = 2^12)
+
+Sparse self-attention whose long-range connections skip back by prime distances
+(2, 3, 5, 7, ...). Takes input of size `(dims, seq_len, batch)` and returns output of the
+same size. See [`SparseIndexAttention`](@ref) for the full attention pattern.
+
+# Keywords
+- `heads`: number of attention heads; must divide `dims`.
+- `window`: each token attends to the `window` tokens before it.
+- `global_tokens`: number of leading tokens that every token attends to.
+- `seq_len_max`: largest distance covered by the sparse connections.
+"""
 function PrimeSelfAttention(
         dims::Int;
         heads = 1,
@@ -68,6 +81,13 @@ function PrimeSelfAttention(
     return SparseIndexAttention(heads, dims, p_list, window, global_tokens, wi, wo)
 end
 
+"""
+    SquareSelfAttention(dims::Int; heads = 1, window = 3, global_tokens = 2, seq_len_max = 2^12)
+
+Sparse self-attention whose long-range connections skip back by square distances
+(1, 4, 9, 16, ...), giving `O(N√N)` cost. Keywords are the same as for
+[`PrimeSelfAttention`](@ref).
+"""
 function SquareSelfAttention(
         dims::Int;
         heads = 1,
@@ -81,6 +101,13 @@ function SquareSelfAttention(
     return SparseIndexAttention(heads, dims, s_list, window, global_tokens, wi, wo)
 end
 
+"""
+    MianChowlaSelfAttention(dims::Int; heads = 1, window = 3, global_tokens = 2, seq_len_max = 2^12)
+
+Sparse self-attention whose long-range connections skip back by Mian-Chowla distances
+(1, 2, 4, 8, 13, ...), a greedy Sidon set in which all pairwise sums are distinct.
+Keywords are the same as for [`PrimeSelfAttention`](@ref).
+"""
 function MianChowlaSelfAttention(
         dims::Int;
         heads = 1,

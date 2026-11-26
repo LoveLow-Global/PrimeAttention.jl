@@ -178,5 +178,8 @@ using Random
         @test 2 in p_indices # 2 is prime
         @test !(2 in s_indices) # 2 is not square
         @test 4 in s_indices # 4 is square
+
+        m_indices = MianChowlaSelfAttention(dims; seq_len_max = 50).indices_list
+        @test m_indices == [1, 2, 4, 8, 13, 21, 31, 45]
     end
 end
