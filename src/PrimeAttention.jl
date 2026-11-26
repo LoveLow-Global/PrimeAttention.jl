@@ -1,11 +1,7 @@
 module PrimeAttention
 
 using Lux
-#using Enzyme
-#using Zygote
 using Primes
-using LinearAlgebra
-using Statistics
 
 # Include sub-files
 include("kernel.jl")
