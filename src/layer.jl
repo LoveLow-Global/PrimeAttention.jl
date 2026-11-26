@@ -1,10 +1,15 @@
 """
-SparseIndexAttention(dims::Int, indices::Vector{Int}, heads::Int, window::Int, global_tokens::Int)
+    SparseIndexAttention(heads, dims, indices_list, window, global_tokens, Wi, Wo)
 
-A generic sparse attention layer that attends to:
-1. Global tokens (hubs).
-2. Local window (neighbors).
-3. Sparse indices provided in `indices_list`.
+A generic causal sparse multi-head attention layer. The embedding of size `dims` is split
+into `heads` heads of size `dims ÷ heads`, and in each head token `i` attends to:
+1. Global tokens (hubs): the first `global_tokens` tokens.
+2. Local window (neighbors): tokens `i - window` to `i`.
+3. Sparse indices: tokens `i - s` for each `s` in `indices_list`.
+
+`Wi` projects the input to queries, keys and values (`dims => 3 * dims`), and `Wo` projects
+the concatenated heads back (`dims => dims`). Usually built with [`PrimeSelfAttention`](@ref),
+[`SquareSelfAttention`](@ref) or [`MianChowlaSelfAttention`](@ref).
 """
 struct SparseIndexAttention{W1, W2} <: Lux.AbstractLuxContainerLayer{(:Wi, :Wo)}
     heads::Int
@@ -14,6 +19,21 @@ struct SparseIndexAttention{W1, W2} <: Lux.AbstractLuxContainerLayer{(:Wi, :Wo)}
     global_tokens::Int
     Wi::W1
     Wo::W2
+
+    function SparseIndexAttention(
+            heads,
+            dims,
+            indices_list,
+            window,
+            global_tokens,
+            Wi::W1,
+            Wo::W2,
+        ) where {W1, W2}
+        if heads < 1 || dims % heads != 0
+            throw(ArgumentError("`dims` ($dims) must be divisible by `heads` ($heads)"))
+        end
+        return new{W1, W2}(heads, dims, indices_list, window, global_tokens, Wi, Wo)
+    end
 end
 
 # Generic Forward Pass
@@ -24,15 +44,18 @@ function (m::SparseIndexAttention)(x::AbstractArray{T, 3}, ps, st) where {T}
     qkv, st_Wi = m.Wi(x, ps.Wi, st.Wi)
     dims_qkv = size(qkv, 1)
     chunk = div(dims_qkv, 3)
+    d_head = div(chunk, m.heads)
 
     # Pre-allocate for type stability
     out_concat = similar(qkv, chunk, seq_len, batch_size)
 
-    for b in 1:batch_size
-        q_slice = view(qkv, 1:chunk, :, b)
-        k_slice = view(qkv, (chunk + 1):(2 * chunk), :, b)
-        v_slice = view(qkv, (2 * chunk + 1):(3 * chunk), :, b)
-        y_slice = view(out_concat, :, :, b) # View into the pre-allocated output
+    # Each head attends independently within its own rows of q, k and v
+    for b in 1:batch_size, h in 1:m.heads
+        rows = ((h - 1) * d_head + 1):(h * d_head)
+        q_slice = view(qkv, rows, :, b)
+        k_slice = view(qkv, rows .+ chunk, :, b)
+        v_slice = view(qkv, rows .+ 2 * chunk, :, b)
+        y_slice = view(out_concat, rows, :, b) # View into the pre-allocated output
 
         sparse_index_kernel!(
             y_slice,

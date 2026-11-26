@@ -5,6 +5,9 @@ using Enzyme
 using LinearAlgebra
 using Random
 
+# Dense O(N^2) attention baseline from the benchmark, also used as a reference here
+include(joinpath(@__DIR__, "..", "benchmark", "full_attention.jl"))
+
 @testset "PrimeAttention.jl" begin
     rng = Random.default_rng()
     Random.seed!(rng, 0)
@@ -109,6 +112,23 @@ using Random
         end
     end
 
+    @testset "Multi-Head" begin
+        @test_throws ArgumentError PrimeSelfAttention(dims; heads = 3)
+        @test_throws ArgumentError SquareSelfAttention(dims; heads = 0)
+
+        # With a window spanning the whole sequence, every layer reduces to causal full
+        # attention, so it must match the benchmark baseline given the same parameters
+        for factory in [PrimeSelfAttention, SquareSelfAttention, MianChowlaSelfAttention]
+            @testset "$factory, heads = $heads" for heads in (1, 2, 4)
+                layer = factory(dims; heads, window = seq_len)
+                ps, st = Lux.setup(rng, layer)
+                y, _ = layer(x, ps, st)
+                y_full, _ = StandardFullAttention(dims; heads)(x, ps, st)
+                @test y ≈ y_full
+            end
+        end
+    end
+
     @testset "Gradient Pass" begin
         # Test gradient through the universal kernel for different index sets
         for factory in [PrimeSelfAttention, SquareSelfAttention, MianChowlaSelfAttention]
@@ -139,8 +159,9 @@ using Random
         x64 = rand(rng, Float64, dims, seq_len, batch)
         target64 = rand(rng, Float64, dims, seq_len, batch)
 
-        for factory in [PrimeSelfAttention, SquareSelfAttention, MianChowlaSelfAttention]
-            layer = factory(dims; seq_len_max = 64)
+        for factory in [PrimeSelfAttention, SquareSelfAttention, MianChowlaSelfAttention],
+                heads in (1, 2)
+            layer = factory(dims; heads, seq_len_max = 64)
             ps, st = Lux.setup(rng, layer)
             ps64 = f64(ps)
 

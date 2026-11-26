@@ -20,6 +20,8 @@ Inspired by architectures like [BigBird](https://arxiv.org/abs/2007.14062), this
 
 The package provides factory functions that return a `SparseIndexAttention` layer. Because this library is built on **Lux.jl**, it utilizes explicit parameter and state management.
 
+The embedding is split into `heads` attention heads of equal size, so the embedding dimension must be divisible by `heads`.
+
 Here is a simple example:
 
 ```julia
